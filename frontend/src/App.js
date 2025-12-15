@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
 import Navbar from './components/Navbar';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import Dashboard from './components/Dashboard';
 import ChartsDisplay from './components/ChartsDisplay';
 import DataInput from './components/DataInput';
+import Splash from './components/Splash';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -14,6 +16,7 @@ function App() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
+
     if (token && userData) {
       setIsAuthenticated(true);
       setUser(JSON.parse(userData));
@@ -37,57 +40,81 @@ function App() {
   return (
     <Router>
       <div className="app-container">
-        <Navbar isAuthenticated={isAuthenticated} onLogout={handleLogout} user={user} />
+        <Navbar
+          isAuthenticated={isAuthenticated}
+          onLogout={handleLogout}
+          user={user}
+        />
+
         <div className="main-content">
           <Routes>
-            <Route 
-              path="/login" 
+
+            {/* Splash Page */}
+            <Route
+              path="/"
               element={
-                !isAuthenticated ? 
-                <Login onLogin={handleLogin} /> : 
-                <Navigate to="/dashboard" />
-              } 
+                isAuthenticated
+                  ? <Navigate to="/dashboard" />
+                  : <Splash />
+              }
             />
-            <Route 
-              path="/signup" 
+
+            {/* Login */}
+            <Route
+              path="/login"
               element={
-                !isAuthenticated ? 
-                <Signup /> : 
-                <Navigate to="/dashboard" />
-              } 
+                isAuthenticated
+                  ? <Navigate to="/dashboard" />
+                  : <Login onLogin={handleLogin} />
+              }
             />
-            <Route 
-              path="/dashboard" 
+
+            {/* Signup */}
+            <Route
+              path="/signup"
               element={
-                isAuthenticated ? 
-                <Dashboard user={user} /> : 
-                <Navigate to="/login" />
-              } 
+                isAuthenticated
+                  ? <Navigate to="/dashboard" />
+                  : <Signup />
+              }
             />
-            <Route 
-              path="/charts/:dashboardId" 
+
+            {/* Dashboard */}
+            <Route
+              path="/dashboard"
               element={
-                isAuthenticated ? 
-                <ChartsDisplay user={user} /> : 
-                <Navigate to="/login" />
-              } 
+                isAuthenticated
+                  ? <Dashboard user={user} />
+                  : <Navigate to="/login" />
+              }
             />
-            <Route 
-              path="/data-input" 
+
+            {/* Charts */}
+            <Route
+              path="/charts/:dashboardId"
               element={
-                isAuthenticated ? 
-                <DataInput user={user} /> : 
-                <Navigate to="/login" />
-              } 
+                isAuthenticated
+                  ? <ChartsDisplay user={user} />
+                  : <Navigate to="/login" />
+              }
             />
-            <Route 
-              path="/" 
+
+            {/* Data Input */}
+            <Route
+              path="/data-input"
               element={
-                isAuthenticated ? 
-                <Navigate to="/dashboard" /> : 
-                <Navigate to="/login" />
-              } 
+                isAuthenticated
+                  ? <DataInput user={user} />
+                  : <Navigate to="/login" />
+              }
             />
+
+            {/* Catch-all */}
+            <Route
+              path="*"
+              element={<Navigate to="/" />}
+            />
+
           </Routes>
         </div>
       </div>
