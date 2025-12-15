@@ -238,7 +238,7 @@ const ChartsDisplay = ({ user }) => {
         <button className="back-btn" onClick={() => navigate('/dashboard')}>
           ← Back to Dashboards
         </button>
-        <h1>Charts</h1>
+        <h1></h1>
         <button 
           className="create-chart-btn"
           onClick={() => setCreating(true)}
