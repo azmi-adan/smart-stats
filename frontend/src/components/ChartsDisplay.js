@@ -6,8 +6,12 @@ const ChartsDisplay = ({ user }) => {
   const { dashboardId } = useParams();
   const [charts, setCharts] = useState([]);
   const [dashboard, setDashboard] = useState(null);
+  const [dashboards, setDashboards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [showDashboardSelector, setShowDashboardSelector] = useState(false);
+  const [pendingChartData, setPendingChartData] = useState(null);
+  const [selectedDashboardForChart, setSelectedDashboardForChart] = useState(null);
   const [newChart, setNewChart] = useState({
     title: '',
     chart_type: 'bar',
@@ -19,8 +23,54 @@ const ChartsDisplay = ({ user }) => {
   const chartRefs = useRef({});
 
   useEffect(() => {
-    fetchCharts();
+    // Check for pending chart data from DataInput
+    const storedPendingData = localStorage.getItem('pendingChartData');
+    if (storedPendingData) {
+      try {
+        const parsedData = JSON.parse(storedPendingData);
+        setPendingChartData(parsedData);
+        
+        // If we're not on a specific dashboard, show dashboard selector
+        if (!dashboardId) {
+          fetchDashboards();
+          setShowDashboardSelector(true);
+        } else {
+          // If we're on a specific dashboard, pre-fill the form
+          prefillChartForm(parsedData);
+          setCreating(true);
+          // Clear the pending data
+          localStorage.removeItem('pendingChartData');
+        }
+      } catch (err) {
+        console.error('Error parsing pending chart data:', err);
+        localStorage.removeItem('pendingChartData');
+      }
+    }
+    
+    if (dashboardId) {
+      fetchCharts();
+    } else {
+      setLoading(false);
+    }
   }, [dashboardId]);
+
+  const fetchDashboards = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/dashboards', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDashboards(data);
+      }
+    } catch (err) {
+      console.error('Error fetching dashboards:', err);
+    }
+  };
 
   const fetchCharts = async () => {
     try {
@@ -43,6 +93,40 @@ const ChartsDisplay = ({ user }) => {
     }
   };
 
+  const prefillChartForm = (data) => {
+    if (!data || !data.suggestion) return;
+
+    const suggestion = data.suggestion;
+    
+    // Pre-fill the form with AI suggestion data
+    setNewChart({
+      title: suggestion.title || 'AI Generated Chart',
+      chart_type: suggestion.chart_type || 'bar',
+      data: JSON.stringify(suggestion.data || [], null, 2),
+      config: JSON.stringify(suggestion.config || {}, null, 2)
+    });
+  };
+
+  const handleDashboardSelection = (selectedDashboardId) => {
+    setSelectedDashboardForChart(selectedDashboardId);
+    setShowDashboardSelector(false);
+    
+    // Pre-fill the chart form with pending data
+    if (pendingChartData) {
+      prefillChartForm(pendingChartData);
+    }
+    
+    // Navigate to the selected dashboard
+    navigate(`/charts/${selectedDashboardId}`);
+    
+    // Open the create chart modal
+    setCreating(true);
+    
+    // Clear pending data
+    localStorage.removeItem('pendingChartData');
+    setPendingChartData(null);
+  };
+
   const handleCreateChart = async (e) => {
     e.preventDefault();
     
@@ -56,9 +140,17 @@ const ChartsDisplay = ({ user }) => {
 
     setError('');
     
+    // Use the selected dashboard ID or the current dashboardId
+    const targetDashboardId = selectedDashboardForChart || dashboardId;
+    
+    if (!targetDashboardId) {
+      setError('Please select a dashboard first');
+      return;
+    }
+    
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/dashboards/${dashboardId}/charts`, {
+      const response = await fetch(`http://localhost:5000/api/dashboards/${targetDashboardId}/charts`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -75,6 +167,7 @@ const ChartsDisplay = ({ user }) => {
         const data = await response.json();
         await fetchCharts();
         setCreating(false);
+        setSelectedDashboardForChart(null);
         setNewChart({
           title: '',
           chart_type: 'bar',
@@ -554,6 +647,71 @@ const ChartsDisplay = ({ user }) => {
 
   return (
     <div className="charts-container">
+      {/* Dashboard Selector Modal */}
+      {showDashboardSelector && (
+        <div className="create-chart-modal-overlay">
+          <div className="create-chart-modal">
+            <div className="modal-header">
+              <h3>Select Dashboard for Your Chart</h3>
+              <button 
+                className="close-modal"
+                onClick={() => {
+                  setShowDashboardSelector(false);
+                  localStorage.removeItem('pendingChartData');
+                  setPendingChartData(null);
+                  navigate('/dashboard');
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div className="dashboard-selector-content">
+              <p className="selector-description">
+                Choose which dashboard you want to add your AI-generated chart to:
+              </p>
+              {pendingChartData && pendingChartData.analysis && (
+                <div className="pending-chart-preview">
+                  <h4>📊 Chart Preview</h4>
+                  <div className="preview-details">
+                    <p><strong>Type:</strong> {pendingChartData.suggestion?.chart_type || 'N/A'}</p>
+                    <p><strong>Title:</strong> {pendingChartData.suggestion?.title || 'N/A'}</p>
+                    <p><strong>Data Points:</strong> {pendingChartData.suggestion?.data?.length || 0}</p>
+                  </div>
+                </div>
+              )}
+              <div className="dashboard-list">
+                {dashboards.length === 0 ? (
+                  <div className="no-dashboards">
+                    <p>No dashboards found. Please create a dashboard first.</p>
+                    <button 
+                      className="create-dashboard-btn"
+                      onClick={() => navigate('/dashboard')}
+                    >
+                      Go to Dashboards
+                    </button>
+                  </div>
+                ) : (
+                  dashboards.map((dash) => (
+                    <div 
+                      key={dash.id} 
+                      className="dashboard-option"
+                      onClick={() => handleDashboardSelection(dash.id)}
+                    >
+                      <div className="dashboard-option-icon">📊</div>
+                      <div className="dashboard-option-details">
+                        <h4>{dash.name}</h4>
+                        <p>{dash.description || 'No description'}</p>
+                      </div>
+                      <div className="dashboard-option-arrow">→</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="charts-header">
         <button className="back-btn" onClick={() => navigate('/dashboard')}>
           ← Back to Dashboards

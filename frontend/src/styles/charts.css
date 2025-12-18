@@ -1095,3 +1095,160 @@
 .download-btn:hover::before {
   opacity: 1;
 }
+/* Dashboard Selector Styles - Add these to your charts.css */
+
+.dashboard-selector-content {
+  padding: 20px;
+}
+
+.selector-description {
+  color: #666;
+  margin-bottom: 20px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.pending-chart-preview {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.pending-chart-preview h4 {
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.preview-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.preview-details p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.95;
+}
+
+.preview-details strong {
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.dashboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.dashboard-option {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background: #f8f9fa;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dashboard-option:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: white;
+  transform: translateX(5px);
+}
+
+.dashboard-option:hover .dashboard-option-details h4,
+.dashboard-option:hover .dashboard-option-details p {
+  color: white;
+}
+
+.dashboard-option-icon {
+  font-size: 32px;
+  min-width: 50px;
+  text-align: center;
+}
+
+.dashboard-option-details {
+  flex: 1;
+}
+
+.dashboard-option-details h4 {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.dashboard-option-details p {
+  margin: 0;
+  font-size: 13px;
+  color: #7f8c8d;
+}
+
+.dashboard-option-arrow {
+  font-size: 24px;
+  color: #667eea;
+  transition: transform 0.3s ease;
+}
+
+.dashboard-option:hover .dashboard-option-arrow {
+  color: white;
+  transform: translateX(5px);
+}
+
+.no-dashboards {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.no-dashboards p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.create-dashboard-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.create-dashboard-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* Scrollbar styling for dashboard list */
+.dashboard-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.dashboard-list::-webkit-scrollbar-thumb {
+  background: #667eea;
+  border-radius: 10px;
+}
+
+.dashboard-list::-webkit-scrollbar-thumb:hover {
+  background: #764ba2;
+}

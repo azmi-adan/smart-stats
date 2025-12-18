@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/Datainput.css';
 
 const DataInput = ({ user }) => {
+  const navigate = useNavigate();
   const [csvData, setCsvData] = useState('');
   const [prompt, setPrompt] = useState('');
   const [analysis, setAnalysis] = useState(null);
@@ -85,9 +87,19 @@ const DataInput = ({ user }) => {
   const createChartFromSuggestion = async () => {
     if (!suggestion) return;
 
-    // Here you would typically navigate to chart creation
-    // or show a modal to select dashboard
-    alert('Chart creation feature would connect to the backend here');
+    // Save the analysis data and suggestion to localStorage for the Charts component
+    const chartData = {
+      analysis: analysis,
+      suggestion: suggestion,
+      csvData: csvData,
+      prompt: prompt,
+      timestamp: new Date().toISOString()
+    };
+    
+    localStorage.setItem('pendingChartData', JSON.stringify(chartData));
+    
+    // Navigate to the charts/dashboard selection page
+    navigate('/charts');
   };
 
   return (
