@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import '../styles/charts.css';
 
@@ -16,6 +16,7 @@ const ChartsDisplay = ({ user }) => {
   });
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const chartRefs = useRef({});
 
   useEffect(() => {
     fetchCharts();
@@ -110,6 +111,325 @@ const ChartsDisplay = ({ user }) => {
       console.error('Error deleting chart:', err);
       setError('Failed to delete chart');
     }
+  };
+
+  // Download chart as PNG using native Canvas API
+  const downloadChartAsPNG = async (chart) => {
+    try {
+      const chartData = Array.isArray(chart.data) ? chart.data : [];
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Set canvas size
+      canvas.width = 800;
+      canvas.height = 600;
+      
+      // Fill background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Add title
+      ctx.fillStyle = '#2c3e50';
+      ctx.font = 'bold 24px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(chart.title, canvas.width / 2, 40);
+      
+      // Add chart type badge
+      ctx.fillStyle = '#4a69bd';
+      ctx.font = '12px Arial';
+      ctx.fillText(chart.chart_type.toUpperCase(), canvas.width / 2, 70);
+      
+      const chartArea = {
+        x: 80,
+        y: 100,
+        width: canvas.width - 160,
+        height: canvas.height - 180
+      };
+
+      switch (chart.chart_type) {
+        case 'bar':
+          drawBarChart(ctx, chartData, chartArea);
+          break;
+        case 'line':
+          drawLineChart(ctx, chartData, chartArea);
+          break;
+        case 'pie':
+          drawPieChart(ctx, chartData, canvas.width / 2, canvas.height / 2, 200);
+          break;
+        default:
+          drawTable(ctx, chartData, chartArea);
+      }
+
+      // Convert to blob and download
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `${chart.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_chart.png`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+      }, 'image/png');
+
+    } catch (err) {
+      console.error('Error downloading chart:', err);
+      alert('Failed to download chart: ' + err.message);
+    }
+  };
+
+  // Draw bar chart on canvas
+  const drawBarChart = (ctx, data, area) => {
+    if (data.length === 0) return;
+
+    const maxValue = Math.max(...data.map(d => d.value));
+    const barWidth = area.width / data.length - 20;
+    const padding = 10;
+
+    // Draw axes
+    ctx.strokeStyle = '#95a5a6';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(area.x, area.y);
+    ctx.lineTo(area.x, area.y + area.height);
+    ctx.lineTo(area.x + area.width, area.y + area.height);
+    ctx.stroke();
+
+    // Draw bars
+    data.forEach((item, index) => {
+      const barHeight = (item.value / maxValue) * (area.height - 40);
+      const x = area.x + (index * (barWidth + 20)) + padding;
+      const y = area.y + area.height - barHeight - 20;
+
+      // Bar gradient
+      const gradient = ctx.createLinearGradient(x, y, x, y + barHeight);
+      gradient.addColorStop(0, '#667eea');
+      gradient.addColorStop(1, '#764ba2');
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(x, y, barWidth, barHeight);
+
+      // Value on top
+      ctx.fillStyle = '#2c3e50';
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(item.value, x + barWidth / 2, y - 5);
+
+      // Label at bottom
+      ctx.fillStyle = '#7f8c8d';
+      ctx.font = '12px Arial';
+      ctx.save();
+      ctx.translate(x + barWidth / 2, area.y + area.height - 5);
+      ctx.rotate(-Math.PI / 4);
+      ctx.fillText(item.name, 0, 0);
+      ctx.restore();
+    });
+  };
+
+  // Draw line chart on canvas
+  const drawLineChart = (ctx, data, area) => {
+    if (data.length === 0) return;
+
+    const maxValue = Math.max(...data.map(d => d.value));
+    const minValue = Math.min(...data.map(d => d.value));
+    const range = maxValue - minValue || 1;
+
+    // Draw axes
+    ctx.strokeStyle = '#95a5a6';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(area.x, area.y);
+    ctx.lineTo(area.x, area.y + area.height);
+    ctx.lineTo(area.x + area.width, area.y + area.height);
+    ctx.stroke();
+
+    // Draw grid lines
+    ctx.strokeStyle = '#ecf0f1';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++) {
+      const y = area.y + (area.height / 5) * i;
+      ctx.beginPath();
+      ctx.moveTo(area.x, y);
+      ctx.lineTo(area.x + area.width, y);
+      ctx.stroke();
+    }
+
+    // Draw line
+    ctx.strokeStyle = '#4a69bd';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+
+    data.forEach((item, index) => {
+      const x = area.x + (index / (data.length - 1 || 1)) * area.width;
+      const y = area.y + area.height - ((item.value - minValue) / range) * area.height;
+
+      if (index === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+
+    ctx.stroke();
+
+    // Draw points
+    data.forEach((item, index) => {
+      const x = area.x + (index / (data.length - 1 || 1)) * area.width;
+      const y = area.y + area.height - ((item.value - minValue) / range) * area.height;
+
+      ctx.fillStyle = '#4a69bd';
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Value label
+      ctx.fillStyle = '#2c3e50';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(item.value, x, y - 10);
+
+      // Name label
+      ctx.fillStyle = '#7f8c8d';
+      ctx.fillText(item.name, x, area.y + area.height + 20);
+    });
+  };
+
+  // Draw pie chart on canvas
+  const drawPieChart = (ctx, data, centerX, centerY, radius) => {
+    if (data.length === 0) return;
+
+    const total = data.reduce((sum, item) => sum + item.value, 0);
+    let currentAngle = -Math.PI / 2;
+
+    const colors = [
+      '#667eea', '#764ba2', '#f093fb', '#4facfe',
+      '#43e97b', '#fa709a', '#fee140', '#30cfd0'
+    ];
+
+    data.forEach((item, index) => {
+      const sliceAngle = (item.value / total) * 2 * Math.PI;
+      
+      // Draw slice
+      ctx.fillStyle = colors[index % colors.length];
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+      ctx.closePath();
+      ctx.fill();
+
+      // Draw border
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Draw label
+      const labelAngle = currentAngle + sliceAngle / 2;
+      const labelX = centerX + Math.cos(labelAngle) * (radius * 0.7);
+      const labelY = centerY + Math.sin(labelAngle) * (radius * 0.7);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(item.name, labelX, labelY);
+      
+      const percentage = ((item.value / total) * 100).toFixed(1) + '%';
+      ctx.font = '12px Arial';
+      ctx.fillText(percentage, labelX, labelY + 20);
+
+      currentAngle += sliceAngle;
+    });
+  };
+
+  // Draw table on canvas
+  const drawTable = (ctx, data, area) => {
+    if (data.length === 0) return;
+
+    const rowHeight = 30;
+    const colWidth = area.width / 2;
+
+    // Header
+    ctx.fillStyle = '#4a69bd';
+    ctx.fillRect(area.x, area.y, area.width, rowHeight);
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('Name', area.x + 10, area.y + 20);
+    ctx.fillText('Value', area.x + colWidth + 10, area.y + 20);
+
+    // Rows
+    data.forEach((item, index) => {
+      const y = area.y + rowHeight * (index + 1);
+      
+      // Alternate row colors
+      ctx.fillStyle = index % 2 === 0 ? '#f8f9fa' : '#ffffff';
+      ctx.fillRect(area.x, y, area.width, rowHeight);
+
+      // Border
+      ctx.strokeStyle = '#e0e0e0';
+      ctx.strokeRect(area.x, y, area.width, rowHeight);
+
+      // Text
+      ctx.fillStyle = '#2c3e50';
+      ctx.font = '14px Arial';
+      ctx.fillText(item.name, area.x + 10, y + 20);
+      ctx.fillText(String(item.value), area.x + colWidth + 10, y + 20);
+    });
+  };
+
+  // Download chart data as JSON
+  const downloadChartAsJSON = (chart) => {
+    const dataStr = JSON.stringify({
+      title: chart.title,
+      type: chart.chart_type,
+      data: chart.data,
+      config: chart.config,
+      created_at: chart.created_at
+    }, null, 2);
+
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = `${chart.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_data.json`;
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Download chart data as CSV
+  const downloadChartAsCSV = (chart) => {
+    const chartData = Array.isArray(chart.data) ? chart.data : [];
+    
+    if (chartData.length === 0) {
+      alert('No data to export');
+      return;
+    }
+
+    // Get all unique keys from the data
+    const keys = Array.from(new Set(chartData.flatMap(Object.keys)));
+    
+    // Create CSV header
+    let csv = keys.join(',') + '\n';
+    
+    // Create CSV rows
+    chartData.forEach(row => {
+      const values = keys.map(key => {
+        const value = row[key];
+        // Handle values with commas or quotes
+        if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+      });
+      csv += values.join(',') + '\n';
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = `${chart.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_data.csv`;
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const renderChart = (chart) => {
@@ -356,15 +676,48 @@ const ChartsDisplay = ({ user }) => {
                   {chart.chart_type.toUpperCase()}
                 </div>
                 <h3>{chart.title}</h3>
-                <button 
-                  className="delete-chart-btn"
-                  onClick={() => handleDeleteChart(chart.id)}
-                  title="Delete chart"
-                >
-                  ×
-                </button>
+                <div className="chart-actions">
+                  <div className="download-dropdown">
+                    <button 
+                      className="download-btn"
+                      title="Download chart"
+                    >
+                      ⬇
+                    </button>
+                    <div className="download-menu">
+                      <button 
+                        onClick={() => downloadChartAsPNG(chart)}
+                        className="download-option"
+                      >
+                        📸 Download as PNG
+                      </button>
+                      <button 
+                        onClick={() => downloadChartAsJSON(chart)}
+                        className="download-option"
+                      >
+                        📄 Download as JSON
+                      </button>
+                      <button 
+                        onClick={() => downloadChartAsCSV(chart)}
+                        className="download-option"
+                      >
+                        📊 Download as CSV
+                      </button>
+                    </div>
+                  </div>
+                  <button 
+                    className="delete-chart-btn"
+                    onClick={() => handleDeleteChart(chart.id)}
+                    title="Delete chart"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
-              <div className="chart-body">
+              <div 
+                className="chart-body"
+                ref={(el) => chartRefs.current[chart.id] = el}
+              >
                 {renderChart(chart)}
               </div>
               <div className="chart-footer">
