@@ -8,24 +8,58 @@ import Dashboard from './components/Dashboard';
 import ChartsDisplay from './components/ChartsDisplay';
 import DataInput from './components/DataInput';
 import Splash from './components/Splash';
+import AutoLogout from './components/AutoLogout';
+
+// Protected Route Component
+const ProtectedRoute = ({ children, isAuthenticated }) => {
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
+// Public Route Component (redirects to dashboard if already logged in)
+const PublicRoute = ({ children, isAuthenticated }) => {
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return children;
+};
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Check authentication on mount
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      const userData = localStorage.getItem('user');
 
-    if (token && userData) {
-      setIsAuthenticated(true);
-      setUser(JSON.parse(userData));
-    }
+      if (token && userData) {
+        try {
+          const parsedUser = JSON.parse(userData);
+          setIsAuthenticated(true);
+          setUser(parsedUser);
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+          // Clear invalid data
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          localStorage.removeItem('lastActivity');
+        }
+      }
+      setIsLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
   const handleLogin = (token, userData) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('lastActivity', Date.now().toString());
     setIsAuthenticated(true);
     setUser(userData);
   };
@@ -33,13 +67,37 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('lastActivity');
     setIsAuthenticated(false);
     setUser(null);
   };
 
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        fontSize: '1.5rem'
+      }}>
+        Loading...
+      </div>
+    );
+  }
+
   return (
     <Router>
       <div className="app-container">
+        {/* Auto-logout component - only active when authenticated */}
+        {isAuthenticated && (
+          <AutoLogout 
+            onLogout={handleLogout} 
+            timeout={15 * 60 * 1000} // 15 minutes
+          />
+        )}
+
         <Navbar
           isAuthenticated={isAuthenticated}
           onLogout={handleLogout}
@@ -48,73 +106,67 @@ function App() {
 
         <div className="main-content">
           <Routes>
-
-            {/* Splash Page */}
+            {/* Public Routes */}
             <Route
               path="/"
               element={
-                isAuthenticated
-                  ? <Navigate to="/dashboard" />
-                  : <Splash />
+                <PublicRoute isAuthenticated={isAuthenticated}>
+                  <Splash />
+                </PublicRoute>
               }
             />
 
-            {/* Login */}
             <Route
               path="/login"
               element={
-                isAuthenticated
-                  ? <Navigate to="/dashboard" />
-                  : <Login onLogin={handleLogin} />
+                <PublicRoute isAuthenticated={isAuthenticated}>
+                  <Login onLogin={handleLogin} />
+                </PublicRoute>
               }
             />
 
-            {/* Signup */}
             <Route
               path="/signup"
               element={
-                isAuthenticated
-                  ? <Navigate to="/dashboard" />
-                  : <Signup />
+                <PublicRoute isAuthenticated={isAuthenticated}>
+                  <Signup />
+                </PublicRoute>
               }
             />
 
-            {/* Dashboard */}
+            {/* Protected Routes */}
             <Route
               path="/dashboard"
               element={
-                isAuthenticated
-                  ? <Dashboard user={user} />
-                  : <Navigate to="/login" />
+                <ProtectedRoute isAuthenticated={isAuthenticated}>
+                  <Dashboard user={user} />
+                </ProtectedRoute>
               }
             />
 
-            {/* Charts */}
             <Route
               path="/charts/:dashboardId"
               element={
-                isAuthenticated
-                  ? <ChartsDisplay user={user} />
-                  : <Navigate to="/login" />
+                <ProtectedRoute isAuthenticated={isAuthenticated}>
+                  <ChartsDisplay user={user} />
+                </ProtectedRoute>
               }
             />
 
-            {/* Data Input */}
             <Route
               path="/data-input"
               element={
-                isAuthenticated
-                  ? <DataInput user={user} />
-                  : <Navigate to="/login" />
+                <ProtectedRoute isAuthenticated={isAuthenticated}>
+                  <DataInput user={user} />
+                </ProtectedRoute>
               }
             />
 
-            {/* Catch-all */}
+            {/* Catch-all Route */}
             <Route
               path="*"
-              element={<Navigate to="/" />}
+              element={<Navigate to="/" replace />}
             />
-
           </Routes>
         </div>
       </div>

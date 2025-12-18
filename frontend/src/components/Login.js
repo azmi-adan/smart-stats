@@ -36,17 +36,23 @@ const Login = ({ onLogin }) => {
       const data = await response.json();
 
       if (response.ok) {
-        // ✅ Store token in localStorage
+        // Store token and user data in localStorage
         localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        // Initialize activity timestamp for auto-logout
+        localStorage.setItem('lastActivity', Date.now().toString());
 
         // Call parent callback
         onLogin(data.token, data.user);
 
+        // Navigate to dashboard
         navigate('/dashboard');
       } else {
         setError(data.error || 'Login failed');
       }
     } catch (err) {
+      console.error('Login error:', err);
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
@@ -79,6 +85,7 @@ const Login = ({ onLogin }) => {
               required
               placeholder="Enter your username"
               className="form-input"
+              autoComplete="username"
             />
           </div>
 
@@ -96,6 +103,7 @@ const Login = ({ onLogin }) => {
               required
               placeholder="Enter your password"
               className="form-input"
+              autoComplete="current-password"
             />
           </div>
 
