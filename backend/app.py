@@ -17,12 +17,9 @@ import os
 # APP CONFIG
 # ========================
 app = Flask(__name__)
-DATABASE_URL = os.getenv("DATABASE_URL")
 
-if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://smart_stats_user:2RcWhQ5rGTAdfSrw01srhqXscvGvRqhh@dpg-d52jbtmmcj7s73bpp3hg-a.oregon-postgres.render.com/smart_stats"
 
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL or 'sqlite:///smart_stats.db'
 app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY", "dev-secret")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
