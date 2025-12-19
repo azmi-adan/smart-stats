@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../styles/signup.css';
 
+const API_URL = 'https://smart-stats-p91n.onrender.com';
+
 const Signup = () => {
   const [formData, setFormData] = useState({
     username: '',
@@ -51,7 +53,7 @@ const Signup = () => {
     setSuccess('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/signup', {
+      const response = await fetch(`${API_URL}/api/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

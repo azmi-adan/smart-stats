@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../styles/dashboard.css';
 
+// Backend API URL
+const API_URL = 'https://smart-stats-p91n.onrender.com';
+
 const Dashboard = ({ user }) => {
   const [dashboards, setDashboards] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false); // modal visibility
-  const [creating, setCreating] = useState(false);   // API request in progress
+  const [showModal, setShowModal] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [newDashboard, setNewDashboard] = useState({
     name: '',
     description: ''
@@ -21,7 +24,7 @@ const Dashboard = ({ user }) => {
   const fetchDashboards = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/dashboards', {
+      const response = await fetch(`${API_URL}/api/dashboards`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -51,7 +54,7 @@ const Dashboard = ({ user }) => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/dashboards', {
+      const response = await fetch(`${API_URL}/api/dashboards`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -65,7 +68,7 @@ const Dashboard = ({ user }) => {
       if (response.ok) {
         setDashboards([...dashboards, data]);
         setNewDashboard({ name: '', description: '' });
-        setShowModal(false); // close modal on success
+        setShowModal(false);
       } else {
         setError(data.error || 'Failed to create dashboard');
       }
@@ -82,7 +85,7 @@ const Dashboard = ({ user }) => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/dashboards/${dashboardId}`, {
+      const response = await fetch(`${API_URL}/api/dashboards/${dashboardId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

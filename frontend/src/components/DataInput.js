@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/Datainput.css';
 
+const API_URL = 'https://smart-stats-p91n.onrender.com';
+
 const DataInput = ({ user }) => {
   const navigate = useNavigate();
   const [csvData, setCsvData] = useState('');
@@ -44,7 +46,7 @@ const DataInput = ({ user }) => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/generate-chart', {
+      const response = await fetch(`${API_URL}/api/generate-chart`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../styles/login.css';
 
+const API_URL = 'https://smart-stats-p91n.onrender.com';
+
 const Login = ({ onLogin }) => {
   const [formData, setFormData] = useState({
     username: '',
@@ -25,7 +27,7 @@ const Login = ({ onLogin }) => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/login', {
+      const response = await fetch(`${API_URL}/api/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

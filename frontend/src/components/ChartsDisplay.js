@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import '../styles/charts.css';
 
+// Backend API URL
+const API_URL = 'https://smart-stats-p91n.onrender.com';
+
 const ChartsDisplay = ({ user }) => {
   const { dashboardId } = useParams();
   const [charts, setCharts] = useState([]);
@@ -57,7 +60,7 @@ const ChartsDisplay = ({ user }) => {
   const fetchDashboards = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/dashboards', {
+      const response = await fetch(`${API_URL}/api/dashboards`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -75,7 +78,7 @@ const ChartsDisplay = ({ user }) => {
   const fetchCharts = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/dashboards/${dashboardId}/charts`, {
+      const response = await fetch(`${API_URL}/api/dashboards/${dashboardId}/charts`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -150,7 +153,7 @@ const ChartsDisplay = ({ user }) => {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/dashboards/${targetDashboardId}/charts`, {
+      const response = await fetch(`${API_URL}/api/dashboards/${targetDashboardId}/charts`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -190,7 +193,7 @@ const ChartsDisplay = ({ user }) => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/charts/${chartId}`, {
+      const response = await fetch(`${API_URL}/api/charts/${chartId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
