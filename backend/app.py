@@ -10,14 +10,22 @@ import json
 from extensions import db, bcrypt
 
 from flask_migrate import Migrate
+import os
+
 
 # ========================
 # APP CONFIG
 # ========================
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///smart_stats.db'
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL or 'sqlite:///smart_stats.db'
+app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY", "dev-secret")
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = 'your-secret-key-change-in-production'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 
 # ========================
@@ -343,6 +351,4 @@ def generate_generic_data():
 # ========================
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True, port=5000)
