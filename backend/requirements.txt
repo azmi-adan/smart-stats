@@ -1,6 +1,7 @@
-# Build tools (FIXES setuptools.build_meta error)
+# Build tools (REQUIRED for Render)
+pip>=23.3
 setuptools>=68.0.0
-wheel
+wheel>=0.41.0
 
 # Core framework
 Flask==2.3.3
@@ -10,7 +11,7 @@ Flask-Bcrypt==1.0.1
 Flask-JWT-Extended==4.5.2
 Flask-Migrate==4.0.5
 
-# Data handling
+# Data handling (Python 3.10 compatible)
 pandas==2.0.3
 numpy==1.25.2
 
