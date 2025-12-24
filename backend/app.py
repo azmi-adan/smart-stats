@@ -122,7 +122,7 @@ def get_dashboards():
             'id': d.id,
             'name': d.name,
             'description': d.description,
-            'chart_count': len(d.charts.all())  # <-- FIXED
+            'chart_count': len(d.charts.all())
         }
         for d in dashboards
     ]), 200
@@ -249,11 +249,37 @@ def generate_chart():
 
     if csv_data:
         df = pd.read_csv(StringIO(csv_data))
+        
+        # CRITICAL: Clean the dataframe BEFORE processing
+        df = clean_dataframe(df)
+        
         stats = analyze_data(df)
         suggestion = suggest_chart_from_data(df, prompt)
         return jsonify({'success': True, 'stats': stats, 'suggestion': suggestion})
 
     return jsonify(generate_from_prompt(prompt)), 200
+
+
+# ========================
+# CRITICAL FIX: DATA CLEANING FUNCTION
+# ========================
+
+def clean_dataframe(df):
+    """
+    Clean dataframe by replacing NaN/None with appropriate defaults
+    """
+    for col in df.columns:
+        if df[col].dtype in ['float64', 'int64', 'float32', 'int32']:
+            # Numeric columns: replace NaN with 0
+            df[col] = df[col].fillna(0)
+        else:
+            # Text columns: replace NaN with empty string
+            df[col] = df[col].fillna('')
+            # Remove any remaining None values
+            df[col] = df[col].replace({None: ''})
+    
+    return df
+
 
 # ========================
 # DATA ANALYSIS FUNCTIONS
@@ -282,6 +308,9 @@ def analyze_data(df):
 
 
 def suggest_chart_from_data(df, prompt):
+    """
+    FIXED: Properly handles NaN values when converting to dict
+    """
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
 
     if 'trend' in prompt.lower():
@@ -293,11 +322,35 @@ def suggest_chart_from_data(df, prompt):
     else:
         chart_type = 'table'
 
+    # Convert to dict - dataframe is already cleaned by clean_dataframe()
+    chart_data = df.head(20).to_dict(orient='records')
+    
+    # Extra safety: ensure no NaN/None values in the output
+    cleaned_data = []
+    for record in chart_data:
+        cleaned_record = {}
+        for key, value in record.items():
+            # Check for NaN, None, or pd.NA
+            if pd.isna(value) or value is None:
+                if key in numeric_cols:
+                    cleaned_record[key] = 0
+                else:
+                    cleaned_record[key] = ''
+            else:
+                # Convert numpy types to Python native types
+                if isinstance(value, (np.integer, np.int64, np.int32)):
+                    cleaned_record[key] = int(value)
+                elif isinstance(value, (np.floating, np.float64, np.float32)):
+                    cleaned_record[key] = float(value)
+                else:
+                    cleaned_record[key] = str(value)
+        cleaned_data.append(cleaned_record)
+
     return {
         'chart_type': chart_type,
         'title': f"Analysis of {df.columns[0]}",
         'columns': df.columns.tolist(),
-        'data': df.head(20).to_dict(orient='records')
+        'data': cleaned_data  # Use cleaned data
     }
 
 
@@ -316,7 +369,7 @@ def generate_sales_data():
     return {
         'chart_type': 'line',
         'title': 'Sales Data',
-        'data': [{'name': m, 'value': np.random.randint(1000, 5000)} for m in months]
+        'data': [{'name': m, 'value': int(np.random.randint(1000, 5000))} for m in months]
     }
 
 def generate_temperature_data():
@@ -324,7 +377,7 @@ def generate_temperature_data():
     return {
         'chart_type': 'line',
         'title': 'Weekly Temperature',
-        'data': [{'name': d, 'value': np.random.randint(10, 35)} for d in days]
+        'data': [{'name': d, 'value': int(np.random.randint(10, 35))} for d in days]
     }
 
 def generate_population_data():
@@ -332,7 +385,7 @@ def generate_population_data():
     return {
         'chart_type': 'bar',
         'title': 'Population by Country',
-        'data': [{'name': c, 'value': np.random.randint(100, 1500)} for c in countries]
+        'data': [{'name': c, 'value': int(np.random.randint(100, 1500))} for c in countries]
     }
 
 def generate_generic_data():
@@ -340,7 +393,7 @@ def generate_generic_data():
     return {
         'chart_type': 'bar',
         'title': 'General Data',
-        'data': [{'name': x, 'value': np.random.randint(10, 100)} for x in items]
+        'data': [{'name': x, 'value': int(np.random.randint(10, 100))} for x in items]
     }
 
 # ========================
