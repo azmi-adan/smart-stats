@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import '../styles/dashboard.css';
 
 // Backend API URL
@@ -9,6 +9,7 @@ const Dashboard = ({ user }) => {
   const [dashboards, setDashboards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showDashboardSelector, setShowDashboardSelector] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newDashboard, setNewDashboard] = useState({
     name: '',
@@ -16,9 +17,16 @@ const Dashboard = ({ user }) => {
   });
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     fetchDashboards();
+    
+    // Check if user came from data input with pending chart
+    const pendingChartData = localStorage.getItem('pendingChartData');
+    if (pendingChartData) {
+      setShowDashboardSelector(true);
+    }
   }, []);
 
   const fetchDashboards = async () => {
@@ -69,6 +77,11 @@ const Dashboard = ({ user }) => {
         setDashboards([...dashboards, data]);
         setNewDashboard({ name: '', description: '' });
         setShowModal(false);
+        
+        // If user is selecting dashboard for chart, redirect to it
+        if (showDashboardSelector) {
+          handleSelectDashboard(data.id);
+        }
       } else {
         setError(data.error || 'Failed to create dashboard');
       }
@@ -105,6 +118,15 @@ const Dashboard = ({ user }) => {
     navigate(`/charts/${dashboardId}`);
   };
 
+  const handleSelectDashboard = (dashboardId) => {
+    navigate(`/charts/${dashboardId}`);
+  };
+
+  const handleCancelSelection = () => {
+    setShowDashboardSelector(false);
+    localStorage.removeItem('pendingChartData');
+  };
+
   if (loading) {
     return (
       <div className="dashboard-loading">
@@ -116,6 +138,82 @@ const Dashboard = ({ user }) => {
 
   return (
     <div className="dashboard-container">
+      {/* Dashboard Selector Modal */}
+      {showDashboardSelector && (
+        <div className="dashboard-selector-overlay">
+          <div className="dashboard-selector-modal">
+            <div className="selector-header">
+              <div>
+                <h2>📊 Choose a Dashboard</h2>
+                <p>Select where you want to add your chart</p>
+              </div>
+              <button 
+                className="close-selector"
+                onClick={handleCancelSelection}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="selector-content">
+              {dashboards.length === 0 ? (
+                <div className="no-dashboards-message">
+                  <div className="message-icon">📋</div>
+                  <h3>No Dashboards Yet</h3>
+                  <p>Create your first dashboard to add your chart</p>
+                  <button 
+                    className="create-dashboard-btn-inline"
+                    onClick={() => {
+                      setShowDashboardSelector(false);
+                      setShowModal(true);
+                    }}
+                  >
+                    <span className="btn-icon">+</span>
+                    Create Dashboard
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="dashboard-selector-grid">
+                    {dashboards.map((dashboard) => (
+                      <div 
+                        key={dashboard.id} 
+                        className="selector-card"
+                        onClick={() => handleSelectDashboard(dashboard.id)}
+                      >
+                        <div className="selector-card-icon">📈</div>
+                        <div className="selector-card-content">
+                          <h3>{dashboard.name}</h3>
+                          <p>{dashboard.description || 'No description'}</p>
+                          <span className="chart-count-badge">
+                            {dashboard.chart_count || 0} chart{(dashboard.chart_count || 0) !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <div className="selector-arrow">→</div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="selector-footer">
+                    <button 
+                      className="create-new-dashboard-btn"
+                      onClick={() => {
+                        setShowDashboardSelector(false);
+                        setShowModal(true);
+                      }}
+                    >
+                      <span className="btn-icon">+</span>
+                      Create New Dashboard
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="dashboard-header">
         <div className="header-content">
           <h1>My Dashboards</h1>
@@ -132,7 +230,7 @@ const Dashboard = ({ user }) => {
 
       {error && <div className="dashboard-error">{error}</div>}
 
-      {/* Modal */}
+      {/* Create Dashboard Modal */}
       {showModal && (
         <div className="create-modal-overlay">
           <div className="create-modal">
@@ -245,20 +343,23 @@ const Dashboard = ({ user }) => {
             <p>Import CSV or Excel files</p>
           </div>
         </Link>
-        <div className="quick-action-btn">
+        <Link to="/data-input" className="quick-action-btn">
           <span className="action-icon">🤖</span>
           <div className="action-content">
-            <h4>AI Suggestions</h4>
+            <h4>AI Analysis</h4>
             <p>Get chart recommendations</p>
           </div>
-        </div>
-        <div className="quick-action-btn">
+        </Link>
+        <button 
+          className="quick-action-btn"
+          onClick={() => setShowModal(true)}
+        >
           <span className="action-icon">⚡</span>
           <div className="action-content">
-            <h4>Templates</h4>
-            <p>Start with pre-built templates</p>
+            <h4>New Dashboard</h4>
+            <p>Create from scratch</p>
           </div>
-        </div>
+        </button>
       </div>
     </div>
   );
