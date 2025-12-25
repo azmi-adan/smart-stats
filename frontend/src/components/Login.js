@@ -136,6 +136,20 @@ const Login = ({ onLogin }) => {
                 Create one now
               </Link>
             </p>
+            
+            {/* User Guide Download Link */}
+            <div className="user-guide-link-container">
+              <a 
+                href="/📊 SmartStats AI.pdf" 
+                download="SmartStats_User_Guide.pdf"
+                className="guide-download-link"
+                title="Download comprehensive user guide (PDF)"
+              >
+                <span className="guide-icon">📖</span>
+                <span className="guide-text">Need help? Download User Guide</span>
+                <span className="guide-badge">PDF</span>
+              </a>
+            </div>
           </div>
         </form>
       </div>
