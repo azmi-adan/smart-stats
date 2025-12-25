@@ -286,16 +286,60 @@ const DataInput = ({ user }) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Validate file type
+    const validExtensions = ['.csv', '.txt'];
+    const fileName = file.name.toLowerCase();
+    const isValidFile = validExtensions.some(ext => fileName.endsWith(ext));
+    
+    if (!isValidFile) {
+      setError('⚠️ Invalid file type! Please upload a CSV (.csv) or text (.txt) file only.');
+      setUploadedFile(null);
+      e.target.value = ''; // Clear the file input
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      setError('⚠️ File too large! Please upload a file smaller than 5MB.');
+      setUploadedFile(null);
+      e.target.value = '';
+      return;
+    }
+
     setUploadedFile(file);
+    setError('');
+    
     const reader = new FileReader();
     
     reader.onload = (event) => {
-      setCsvData(event.target.result);
+      const content = event.target.result;
+      
+      // Validate CSV format - check if it has commas
+      const lines = content.trim().split('\n');
+      if (lines.length < 2) {
+        setError('⚠️ Invalid CSV format! File must have at least a header row and one data row.');
+        setUploadedFile(null);
+        setCsvData('');
+        return;
+      }
+      
+      // Check if first line has commas (CSV header)
+      const firstLine = lines[0];
+      if (!firstLine.includes(',')) {
+        setError('⚠️ Invalid CSV format! File must use comma (,) as delimiter. Example: name,value');
+        setUploadedFile(null);
+        setCsvData('');
+        return;
+      }
+      
+      setCsvData(content);
       setError('');
     };
     
     reader.onerror = () => {
-      setError('Error reading file');
+      setError('❌ Error reading file. Please try again.');
+      setUploadedFile(null);
     };
     
     reader.readAsText(file);
@@ -472,8 +516,8 @@ const DataInput = ({ user }) => {
                     Choose File
                   </label>
                   {uploadedFile && (
-                    <div className="file-info">
-                      <span className="file-icon">📄</span>
+                    <div className="file-info success">
+                      <span className="file-icon">✅</span>
                       <span className="file-name">{uploadedFile.name}</span>
                       <span className="file-size">
                         ({(uploadedFile.size / 1024).toFixed(1)} KB)
@@ -494,7 +538,41 @@ const DataInput = ({ user }) => {
                   <textarea
                     id="csvData"
                     value={csvData}
-                    onChange={(e) => setCsvData(e.target.value)}
+                    onChange={(e) => {
+                      const content = e.target.value;
+                      setCsvData(content);
+                      
+                      // Validate pasted content
+                      if (content.trim().length > 0) {
+                        const lines = content.trim().split('\n');
+                        
+                        // Check if it has at least 2 lines
+                        if (lines.length < 2) {
+                          setError('⚠️ CSV must have at least a header row and one data row.');
+                          return;
+                        }
+                        
+                        // Check if first line has commas
+                        if (!lines[0].includes(',')) {
+                          setError('⚠️ Invalid CSV format! Use comma (,) as delimiter. Example: name,value');
+                          return;
+                        }
+                        
+                        // Clear error if valid
+                        setError('');
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const content = e.target.value.trim();
+                      if (content.length > 0) {
+                        const lines = content.split('\n');
+                        
+                        // Final validation on blur
+                        if (lines.length < 2 || !lines[0].includes(',')) {
+                          setError('⚠️ Please enter valid CSV data with comma separators.');
+                        }
+                      }
+                    }}
                     placeholder="Paste your CSV data here...
 student,marks
 Azmi,50
@@ -502,8 +580,18 @@ hafsa,50
 sawa,60
 mary,50"
                     rows="10"
-                    className="data-textarea"
+                    className={`data-textarea ${error ? 'error' : csvData.trim().length > 0 ? 'success' : ''}`}
                   />
+                  <div className="csv-hint">
+                    💡 <strong>Tip:</strong> Make sure your data uses commas (,) to separate values. 
+                    First row should be column headers.
+                  </div>
+                  
+                  {error && (
+                    <div className="error-message">
+                      {error}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
