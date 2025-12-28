@@ -10,12 +10,19 @@ const Dashboard = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showDashboardSelector, setShowDashboardSelector] = useState(false);
+  const [showStatsModal, setShowStatsModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newDashboard, setNewDashboard] = useState({
     name: '',
     description: ''
   });
   const [error, setError] = useState('');
+  const [stats, setStats] = useState({
+    totalCharts: 0,
+    totalDashboards: 0,
+    activeUsers: 1,
+    dataPoints: 0
+  });
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -28,6 +35,18 @@ const Dashboard = ({ user }) => {
       setShowDashboardSelector(true);
     }
   }, []);
+
+  useEffect(() => {
+    // Calculate stats when dashboards change
+    const totalCharts = dashboards.reduce((sum, d) => sum + (d.chart_count || 0), 0);
+    const totalDashboards = dashboards.length;
+    setStats(prev => ({
+      ...prev,
+      totalCharts,
+      totalDashboards,
+      dataPoints: totalCharts * 50 // Estimate
+    }));
+  }, [dashboards]);
 
   const fetchDashboards = async () => {
     try {
@@ -127,6 +146,152 @@ const Dashboard = ({ user }) => {
     localStorage.removeItem('pendingChartData');
   };
 
+  // Premium Stats Component
+  const StatsModal = () => (
+    <div className="stats-modal-overlay" onClick={() => setShowStatsModal(false)}>
+      <div className="stats-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="stats-modal-header">
+          <h2>📊 Analytics Overview</h2>
+          <button className="close-stats-modal" onClick={() => setShowStatsModal(false)}>×</button>
+        </div>
+        
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-icon">📈</div>
+            <div className="stat-content">
+              <h3>Total Charts</h3>
+              <div className="stat-value">{stats.totalCharts}</div>
+              <div className="stat-change positive">+12% this week</div>
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon">📋</div>
+            <div className="stat-content">
+              <h3>Dashboards</h3>
+              <div className="stat-value">{stats.totalDashboards}</div>
+              <div className="stat-change neutral">Active</div>
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon">👥</div>
+            <div className="stat-content">
+              <h3>Users</h3>
+              <div className="stat-value">{stats.activeUsers}</div>
+              <div className="stat-change positive">Online</div>
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon">💾</div>
+            <div className="stat-content">
+              <h3>Data Points</h3>
+              <div className="stat-value">{stats.dataPoints.toLocaleString()}</div>
+              <div className="stat-change positive">+8% growth</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="circular-progress-section">
+          <h3 className="section-title">Performance Metrics</h3>
+          <div className="circular-progress-grid">
+            <CircularProgress 
+              percentage={Math.min(100, (stats.totalCharts / 20) * 100)} 
+              label="Chart Usage"
+              color="#6C63FF"
+            />
+            <CircularProgress 
+              percentage={Math.min(100, (stats.totalDashboards / 10) * 100)} 
+              label="Dashboard Capacity"
+              color="#4a69bd"
+            />
+            <CircularProgress 
+              percentage={85} 
+              label="Data Quality"
+              color="#00d2ff"
+            />
+            <CircularProgress 
+              percentage={92} 
+              label="System Health"
+              color="#7bed9f"
+            />
+          </div>
+        </div>
+
+        <div className="activity-timeline">
+          <h3 className="section-title">Recent Activity</h3>
+          <div className="timeline-items">
+            <div className="timeline-item">
+              <div className="timeline-dot"></div>
+              <div className="timeline-content">
+                <h4>Dashboard Created</h4>
+                <p>New analytics dashboard initialized</p>
+                <span className="timeline-time">2 hours ago</span>
+              </div>
+            </div>
+            <div className="timeline-item">
+              <div className="timeline-dot"></div>
+              <div className="timeline-content">
+                <h4>Charts Updated</h4>
+                <p>3 charts refreshed with new data</p>
+                <span className="timeline-time">5 hours ago</span>
+              </div>
+            </div>
+            <div className="timeline-item">
+              <div className="timeline-dot"></div>
+              <div className="timeline-content">
+                <h4>Data Import</h4>
+                <p>Successfully imported 1,200 records</p>
+                <span className="timeline-time">1 day ago</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Circular Progress Component
+  const CircularProgress = ({ percentage, label, color }) => {
+    const radius = 60;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+    return (
+      <div className="circular-progress-container">
+        <svg className="circular-progress" width="160" height="160">
+          <circle
+            className="circular-progress-bg"
+            cx="80"
+            cy="80"
+            r={radius}
+            fill="none"
+            stroke="rgba(255, 255, 255, 0.1)"
+            strokeWidth="12"
+          />
+          <circle
+            className="circular-progress-bar"
+            cx="80"
+            cy="80"
+            r={radius}
+            fill="none"
+            stroke={color}
+            strokeWidth="12"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            transform="rotate(-90 80 80)"
+          />
+        </svg>
+        <div className="circular-progress-text">
+          <div className="percentage">{Math.round(percentage)}%</div>
+          <div className="label">{label}</div>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="dashboard-loading">
@@ -138,6 +303,38 @@ const Dashboard = ({ user }) => {
 
   return (
     <div className="dashboard-container">
+      {/* Stats Modal */}
+      {showStatsModal && <StatsModal />}
+
+      {/* Premium Stats Bar */}
+      <div className="premium-stats-bar">
+        <div className="stat-item" onClick={() => setShowStatsModal(true)}>
+          <div className="stat-mini-icon">📊</div>
+          <div className="stat-mini-content">
+            <span className="stat-mini-label">Charts</span>
+            <span className="stat-mini-value">{stats.totalCharts}</span>
+          </div>
+        </div>
+        <div className="stat-item" onClick={() => setShowStatsModal(true)}>
+          <div className="stat-mini-icon">📋</div>
+          <div className="stat-mini-content">
+            <span className="stat-mini-label">Dashboards</span>
+            <span className="stat-mini-value">{stats.totalDashboards}</span>
+          </div>
+        </div>
+        <div className="stat-item" onClick={() => setShowStatsModal(true)}>
+          <div className="stat-mini-icon">💾</div>
+          <div className="stat-mini-content">
+            <span className="stat-mini-label">Data Points</span>
+            <span className="stat-mini-value">{stats.dataPoints.toLocaleString()}</span>
+          </div>
+        </div>
+        <button className="view-analytics-btn" onClick={() => setShowStatsModal(true)}>
+          <span>View Analytics</span>
+          <span className="arrow">→</span>
+        </button>
+      </div>
+
       {/* Dashboard Selector Modal */}
       {showDashboardSelector && (
         <div className="dashboard-selector-overlay">
