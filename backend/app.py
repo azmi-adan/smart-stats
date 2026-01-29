@@ -11,6 +11,9 @@ from extensions import db, bcrypt
 
 from flask_migrate import Migrate
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 # ========================
@@ -18,7 +21,8 @@ import os
 # ========================
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://smart_stats_user:2RcWhQ5rGTAdfSrw01srhqXscvGvRqhh@dpg-d52jbtmmcj7s73bpp3hg-a.oregon-postgres.render.com/smart_stats"
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
+
 
 app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY", "dev-secret")
 
