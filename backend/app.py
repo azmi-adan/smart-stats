@@ -37,12 +37,7 @@ migrate = Migrate(app, db)
 bcrypt.init_app(app)
 
 
-CORS(
-    app,
-    resources={r"/api/*": {"origins": "https://smart-stats.netlify.app"}},
-    supports_credentials=True
-)
-
+CORS(app, supports_credentials=True)
 jwt = JWTManager(app)
 
 # ========================
@@ -60,10 +55,6 @@ from models.datainput import DataInput
 # ========================
 # AUTH ROUTES
 # ========================
-@app.route("/health", methods=["GET"])
-def health():
-    return {"status": "ok"}, 200
-
 
 @app.route('/api/signup', methods=['POST'])
 def signup():
