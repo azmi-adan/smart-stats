@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SmartStats AI — User Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --surface: rgba(255,255,255,0.04);
+    --surface-hover: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.08);
+    --border-bright: rgba(255,255,255,0.16);
+    --text: #e8eaf0;
+    --muted: rgba(232,234,240,0.45);
+    --accent: #7eb8f7;
+    --accent2: #a78bfa;
+    --accent3: #34d399;
+    --glow: rgba(126,184,247,0.12);
+    --glow2: rgba(167,139,250,0.10);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-weight: 300;
+    line-height: 1.7;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Noise Grain Overlay ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.6;
+  }
+
+  /* ── Ambient Blobs ── */
+  .blob {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .blob-1 {
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(126,184,247,0.13) 0%, transparent 70%);
+    top: -150px; left: -100px;
+    animation: drift1 18s ease-in-out infinite alternate;
+  }
+  .blob-2 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(167,139,250,0.10) 0%, transparent 70%);
+    bottom: 100px; right: -80px;
+    animation: drift2 22s ease-in-out infinite alternate;
+  }
+  .blob-3 {
+    width: 350px; height: 350px;
+    background: radial-gradient(circle, rgba(52,211,153,0.07) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    animation: drift3 26s ease-in-out infinite alternate;
+  }
+  @keyframes drift1 { from { transform: translate(0,0); } to { transform: translate(60px, 80px); } }
+  @keyframes drift2 { from { transform: translate(0,0); } to { transform: translate(-50px, -60px); } }
+  @keyframes drift3 { from { transform: translate(-50%,-50%) scale(1); } to { transform: translate(-50%,-50%) scale(1.3); } }
+
+  /* ── Layout ── */
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 64px 32px 120px;
+  }
+
+  /* ── Header ── */
+  .hero {
+    text-align: center;
+    padding: 80px 0 72px;
+    position: relative;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(126,184,247,0.08);
+    border: 1px solid rgba(126,184,247,0.2);
+    padding: 6px 16px;
+    border-radius: 100px;
+    margin-bottom: 32px;
+    backdrop-filter: blur(8px);
+    animation: fadeUp 0.8s ease both;
+  }
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(3rem, 7vw, 5rem);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1.08;
+    margin-bottom: 20px;
+    animation: fadeUp 0.8s 0.1s ease both;
+    background: linear-gradient(135deg, #e8eaf0 30%, rgba(126,184,247,0.9) 70%, rgba(167,139,250,0.8) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero h1 em {
+    font-style: italic;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-sub {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    animation: fadeUp 0.8s 0.2s ease both;
+  }
+
+  /* ── Quick Start ── */
+  .quickstart {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    margin: 0 0 64px;
+    animation: fadeUp 0.8s 0.3s ease both;
+  }
+  .qs-step {
+    background: var(--surface);
+    padding: 28px 24px;
+    backdrop-filter: blur(20px);
+    transition: background 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .qs-step::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-bright), transparent);
+  }
+  .qs-step:hover { background: var(--surface-hover); }
+  .qs-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+    opacity: 0.7;
+  }
+  .qs-icon { font-size: 28px; margin-bottom: 10px; display: block; }
+  .qs-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text);
+    letter-spacing: 0.01em;
+  }
+  .qs-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ── Divider ── */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 56px 0 40px;
+  }
+  .divider-line { flex: 1; height: 1px; background: var(--border); }
+  .divider-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ── Section ── */
+  .section {
+    margin-bottom: 56px;
+    animation: fadeUp 0.7s ease both;
+  }
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .section-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 11px;
+    color: var(--accent);
+    opacity: 0.6;
+    letter-spacing: 0.1em;
+  }
+  .section h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.75rem;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    background: linear-gradient(135deg, var(--text) 60%, var(--accent) 140%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 32px;
+    backdrop-filter: blur(16px);
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--border-bright) 40%, transparent 100%);
+  }
+  .card:hover {
+    border-color: var(--border-bright);
+    background: var(--surface-hover);
+  }
+
+  /* ── Lists ── */
+  .card ul { list-style: none; padding: 0; }
+  .card ul li {
+    padding: 7px 0;
+    font-size: 13px;
+    color: var(--muted);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .card ul li:last-child { border-bottom: none; }
+  .card ul li::before {
+    content: '—';
+    color: var(--accent);
+    opacity: 0.5;
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-size: 11px;
+  }
+
+  /* ── Grid Cards ── */
+  .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .mini-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 24px;
+    backdrop-filter: blur(16px);
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .mini-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-bright), transparent);
+  }
+  .mini-card:hover { border-color: var(--border-bright); }
+  .mini-card-icon {
+    font-size: 20px;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .mini-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .mini-card p {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ── Code block ── */
+  .code-block {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--accent3);
+    margin-top: 16px;
+    letter-spacing: 0.02em;
+    line-height: 1.7;
+  }
+  .code-comment { color: rgba(52,211,153,0.4); }
+
+  /* ── Table ── */
+  .styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    margin-top: 16px;
+  }
+  .styled-table th {
+    text-align: left;
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-bright);
+  }
+  .styled-table td {
+    padding: 12px 16px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .styled-table tr:last-child td { border-bottom: none; }
+  .styled-table tr:hover td { background: rgba(255,255,255,0.02); color: var(--text); }
+
+  /* ── Stat Pills ── */
+  .stat-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .stat-pill {
+    background: rgba(126,184,247,0.07);
+    border: 1px solid rgba(126,184,247,0.15);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 12px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    backdrop-filter: blur(8px);
+    letter-spacing: 0.02em;
+  }
+  .stat-pill .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.6;
+  }
+
+  /* ── Chart Type Cards ── */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .chart-type {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 12px;
+    text-align: center;
+    transition: border-color 0.3s, background 0.3s, transform 0.3s;
+    cursor: default;
+  }
+  .chart-type:hover {
+    border-color: rgba(126,184,247,0.3);
+    background: var(--surface-hover);
+    transform: translateY(-2px);
+  }
+  .chart-type .ct-icon { font-size: 22px; margin-bottom: 8px; display: block; }
+  .chart-type .ct-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .chart-type .ct-use {
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  /* ── Export format tags ── */
+  .format-tags { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .format-tag {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+  }
+  .tag-json { background: rgba(126,184,247,0.1); border: 1px solid rgba(126,184,247,0.2); color: var(--accent); }
+  .tag-csv  { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.2); color: var(--accent3); }
+  .tag-txt  { background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.2); color: var(--accent2); }
+  .tag-png  { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); color: #fbbf24; }
+
+  /* ── Tips ── */
+  .tips-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .tip-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 24px;
+    backdrop-filter: blur(16px);
+    position: relative;
+    overflow: hidden;
+  }
+  .tip-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--glow), transparent 60%);
+    pointer-events: none;
+  }
+  .tip-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tip-card ul { list-style: none; padding: 0; }
+  .tip-card ul li {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 5px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .tip-card ul li::before {
+    content: '›';
+    color: var(--accent);
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: -1px;
+  }
+
+  /* ── Troubleshooting ── */
+  .trouble-list { display: flex; flex-direction: column; gap: 10px; }
+  .trouble-item {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .trouble-problem, .trouble-solution {
+    padding: 16px 20px;
+    font-size: 12.5px;
+    backdrop-filter: blur(12px);
+  }
+  .trouble-problem {
+    background: rgba(255,255,255,0.03);
+    color: var(--muted);
+  }
+  .trouble-solution {
+    background: rgba(126,184,247,0.04);
+    color: var(--text);
+  }
+  .trouble-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .trouble-problem .trouble-label { color: rgba(255,100,100,0.5); }
+  .trouble-solution .trouble-label { color: rgba(52,211,153,0.6); }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center;
+    padding: 64px 0 0;
+    border-top: 1px solid var(--border);
+    margin-top: 80px;
+  }
+  .footer-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.5rem;
+    background: linear-gradient(135deg, var(--text), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+  }
+  .footer-meta {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .footer-email {
+    font-size: 12px;
+    color: var(--accent);
+    text-decoration: none;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  .footer-email:hover { opacity: 1; }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    .quickstart { grid-template-columns: 1fr; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .chart-grid { grid-template-columns: repeat(3, 1fr); }
+    .tips-grid { grid-template-columns: 1fr; }
+    .trouble-item { grid-template-columns: 1fr; }
+    .wrapper { padding: 40px 20px 80px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Ambient Blobs -->
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<div class="wrapper">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">📊 Version 1.0 &nbsp;·&nbsp; December 2025</div>
+    <h1>Smart<em>Stats</em> AI</h1>
+    <p class="hero-sub">Complete User Guide &nbsp;·&nbsp; Turn data into insights, effortlessly</p>
+  </div>
+
+  <!-- Quick Start -->
+  <div class="quickstart">
+    <div class="qs-step">
+      <div class="qs-num">Step 01</div>
+      <span class="qs-icon">👤</span>
+      <div class="qs-title">Create Account</div>
+      <div class="qs-desc">Sign up with username, email, and password. Log in immediately after registration.</div>
+    </div>
+    <div class="qs-step">
+      <div class="qs-num">Step 02</div>
+      <span class="qs-icon">📤</span>
+      <div class="qs-title">Upload CSV</div>
+      <div class="qs-desc">Upload a CSV file directly or paste your data into the input box — either works.</div>
+    </div>
+    <div class="qs-step">
+      <div class="qs-num">Step 03</div>
+      <span class="qs-icon">🤖</span>
+      <div class="qs-title">Let AI Work</div>
+      <div class="qs-desc">SmartStats AI analyzes your data and automatically generates charts and insights.</div>
+    </div>
+  </div>
+
+  <!-- Getting Started -->
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-label">Getting Started</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <h2>Account & Dashboard</h2>
+    </div>
+    <div class="cards-grid">
+      <div class="mini-card">
+        <span class="mini-card-icon">🔐</span>
+        <h4>Creating an Account</h4>
+        <p>Register with a unique username, valid email address, and a secure password. Log in immediately after signup.</p>
+      </div>
+      <div class="mini-card">
+        <span class="mini-card-icon">⏱️</span>
+        <h4>Session Management</h4>
+        <p>Sessions stay active for 24 hours. After expiration, simply log in again to continue working.</p>
+      </div>
+      <div class="mini-card">
+        <span class="mini-card-icon">📊</span>
+        <h4>Dashboard Overview</h4>
+        <p>Upload and analyze datasets, view created charts, manage dashboards, and export your work — all from one place.</p>
+      </div>
+      <div class="mini-card">
+        <span class="mini-card-icon">🗂️</span>
+        <h4>Multiple Dashboards</h4>
+        <p>Create separate dashboards per project. Name them clearly, add charts, rearrange, and delete as needed.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Input -->
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-label">Data Input</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <h2>Uploading Data</h2>
+    </div>
+    <div class="card">
+      <ul>
+        <li>Upload a CSV file directly from your device</li>
+        <li>Or paste CSV content directly into the input box</li>
+        <li>First row must contain column headers</li>
+        <li>Values must be comma-separated</li>
+        <li>Maximum file size: <strong style="color:var(--text)">5 MB</strong></li>
+        <li>If format is incorrect, a validation error will describe the issue</li>
+      </ul>
+      <div class="code-block">
+        <span class="code-comment"># Example CSV format</span><br/>
+        student,marks<br/>
+        Alice,95<br/>
+        Bob,87<br/>
+        Carol,92
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Analysis -->
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-label">AI Analysis</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <h2>AI Analysis</h2>
+    </div>
+    <div class="card">
+      <p style="font-size:13px; color:var(--muted); margin-bottom:20px;">SmartStats AI automatically computes key statistics from your dataset — no configuration required. You can also guide the AI with optional prompts.</p>
+
+      <div class="stat-row">
+        <div class="stat-pill"><div class="dot"></div> Mean (Average)</div>
+        <div class="stat-pill"><div class="dot"></div> Median</div>
+        <div class="stat-pill"><div class="dot"></div> Standard Deviation</div>
+        <div class="stat-pill"><div class="dot"></div> Minimum</div>
+        <div class="stat-pill"><div class="dot"></div> Maximum</div>
+      </div>
+
+      <div style="margin-top: 28px;">
+        <div style="font-family:'Syne',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:var(--accent); opacity:0.7; margin-bottom:10px;">Optional AI Prompts</div>
+        <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:6px;">
+          <li style="font-size:12px; color:var(--muted); display:flex; align-items:center; gap:10px;"><span style="color:var(--accent); font-size:11px;">›</span> "Show trends over time"</li>
+          <li style="font-size:12px; color:var(--muted); display:flex; align-items:center; gap:10px;"><span style="color:var(--accent); font-size:11px;">›</span> "Compare categories"</li>
+          <li style="font-size:12px; color:var(--muted); display:flex; align-items:center; gap:10px;"><span style="color:var(--accent); font-size:11px;">›</span> "Highlight highest and lowest values"</li>
+        </ul>
+      </div>
+
+      <div style="margin-top:28px;">
+        <div style="font-family:'Syne',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:var(--accent); opacity:0.7; margin-bottom:10px;">Download Analysis As</div>
+        <div class="format-tags">
+          <span class="format-tag tag-json">JSON</span>
+          <span class="format-tag tag-csv">CSV</span>
+          <span class="format-tag tag-txt">TXT</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-label">Charting</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <h2>Creating Charts</h2>
+    </div>
+    <div class="card">
+      <p style="font-size:13px; color:var(--muted); margin-bottom: 24px;">AI recommends suitable chart types based on your data — generate with a single click. You can also manually choose chart types and configurations.</p>
+      <div class="chart-grid">
+        <div class="chart-type">
+          <span class="ct-icon">📊</span>
+          <div class="ct-name">Bar</div>
+          <div class="ct-use">Compare categories</div>
+        </div>
+        <div class="chart-type">
+          <span class="ct-icon">📈</span>
+          <div class="ct-name">Line</div>
+          <div class="ct-use">Show trends over time</div>
+        </div>
+        <div class="chart-type">
+          <span class="ct-icon">🥧</span>
+          <div class="ct-name">Pie</div>
+          <div class="ct-use">Show proportions</div>
+        </div>
+        <div class="chart-type">
+          <span class="ct-icon">🔵</span>
+          <div class="ct-name">Scatter</div>
+          <div class="ct-use">Find relationships</div>
+        </div>
+        <div class="chart-type">
+          <span class="ct-icon">🗃️</span>
+          <div class="ct-name">Table</div>
+          <div class="ct-use">View raw data</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export -->
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-label">Exporting</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <h2>Downloading & Exporting</h2>
+    </div>
+    <div class="card">
+      <div style="margin-bottom:24px;">
+        <div style="font-family:'Syne',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:var(--accent); opacity:0.7; margin-bottom:10px;">Chart Export</div>
+        <p style="font-size:13px; color:var(--muted);">Export any chart as a <strong style="color:var(--text)">PNG image</strong> at 1200 × 800 pixels — ready for presentations and reports.</p>
+        <div class="format-tags" style="margin-top:10px;"><span class="format-tag tag-png">PNG · 1200×800px</span></div>
+      </div>
+      <div>
+        <div style="font-family:'Syne',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:var(--accent); opacity:0.7; margin-bottom:10px;">Data Export</div>
+        <table class="styled-table">
+          <thead>
+            <tr><th>Format</th><th>Best For</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="format-tag tag-json" style="display:inline-block;">JSON</span></td><td>System integration & APIs</td></tr>
+            <tr><td><span class="format-tag tag-csv" style="display:inline-block;">CSV</span></td><td>Excel, Google Sheets</td></tr>
+            <tr><td><span class="format-tag tag-txt" style="display:inline-block;">TXT</span></td><td>Reports & documentation</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tips -->
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-label">Best Practices</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">06</span>
+      <h2>Tips & Best Practices</h2>
+    </div>
+    <div class="tips-grid">
+      <div class="tip-card">
+        <h4>📌 Data Format</h4>
+        <ul>
+          <li>Use clear, descriptive column names</li>
+          <li>Avoid special characters in headers</li>
+          <li>Keep data types consistent — numbers vs text</li>
+          <li>Ensure the first row contains only headers</li>
+        </ul>
+      </div>
+      <div class="tip-card">
+        <h4>🗂️ Organization</h4>
+        <ul>
+          <li>Create one dashboard per project</li>
+          <li>Use descriptive names for charts</li>
+          <li>Delete unused charts and dashboards</li>
+          <li>Rearrange charts for cleaner layouts</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Troubleshooting -->
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-label">Troubleshooting</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">07</span>
+      <h2>Troubleshooting</h2>
+    </div>
+    <div class="trouble-list">
+      <div class="trouble-item">
+        <div class="trouble-problem">
+          <div class="trouble-label">Problem</div>
+          File won't upload
+        </div>
+        <div class="trouble-solution">
+          <div class="trouble-label">Solution</div>
+          Check file type, size (max 5MB), and that the CSV is properly formatted
+        </div>
+      </div>
+      <div class="trouble-item">
+        <div class="trouble-problem">
+          <div class="trouble-label">Problem</div>
+          Charts show "Item 1, Item 2"
+        </div>
+        <div class="trouble-solution">
+          <div class="trouble-label">Solution</div>
+          Re-upload your data — the first row must contain proper column headers
+        </div>
+      </div>
+      <div class="trouble-item">
+        <div class="trouble-problem">
+          <div class="trouble-label">Problem</div>
+          Login session expired
+        </div>
+        <div class="trouble-solution">
+          <div class="trouble-label">Solution</div>
+          Sessions last 24 hours. Simply log in again to continue working
+        </div>
+      </div>
+      <div class="trouble-item">
+        <div class="trouble-problem">
+          <div class="trouble-label">Problem</div>
+          Analysis is slow
+        </div>
+        <div class="trouble-solution">
+          <div class="trouble-label">Solution</div>
+          Large files can take 10–30 seconds to process. This is expected behavior
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-logo">SmartStats AI</div>
+    <div class="footer-meta">Version 1.0 &nbsp;·&nbsp; December 25, 2025</div>
+    <div class="footer-meta" style="margin-bottom:16px;">Support & Contact</div>
+    <a href="mailto:azmi.adan2032@gmail.com" class="footer-email">azmi.adan2032@gmail.com</a>
+    <div style="margin-top:40px; font-size:11px; color:rgba(232,234,240,0.2); letter-spacing:0.06em;">Thank you for using SmartStats AI</div>
+  </div>
+
+</div>
+</body>
+</html>

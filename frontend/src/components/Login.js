@@ -140,8 +140,8 @@ const Login = ({ onLogin }) => {
             {/* User Guide Download Link */}
             <div className="user-guide-link-container">
               <a 
-                href="/📊 SmartStats AI.pdf" 
-                download="SmartStats_User_Guide.pdf"
+                href="/smartstats_user_guide.html" 
+                download="smartstats_user_guide.html"
                 className="guide-download-link"
                 title="Download comprehensive user guide (PDF)"
               >
